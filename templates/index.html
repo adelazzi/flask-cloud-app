@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Registry</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & tokens ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0f14;
+      --surface:   #13161e;
+      --card:      #1a1e28;
+      --border:    #252936;
+      --accent:    #4f8ef7;
+      --accent2:   #7c5bf7;
+      --success:   #22c97a;
+      --danger:    #f75b5b;
+      --warn:      #f7a94f;
+      --text:      #e8eaf2;
+      --muted:     #5c6280;
+      --radius:    12px;
+      --mono:      'DM Mono', monospace;
+      --sans:      'Syne', sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    /* ── Background grid ────────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: .35;
+      pointer-events: none;
+    }
+
+    /* ── Layout ─────────────────────────────────────────────────── */
+    .shell {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+      position: relative;
+    }
+
+    /* ── Header ─────────────────────────────────────────────────── */
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 36px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .brand { display: flex; flex-direction: column; gap: 2px; }
+
+    .brand-tag {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-size: clamp(28px, 5vw, 44px);
+      font-weight: 800;
+      letter-spacing: -.02em;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--text) 40%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Stats bar ──────────────────────────────────────────────── */
+    .stats {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+
+    .stat {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      min-width: 120px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--muted);
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -.03em;
+      line-height: 1;
+    }
+
+    .stat-value.accent  { color: var(--accent); }
+    .stat-value.success { color: var(--success); }
+    .stat-value.danger  { color: var(--danger); }
+
+    /* ── Toolbar ─────────────────────────────────────────────────── */
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search-wrap {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+
+    .search-wrap svg {
+      position: absolute;
+      left: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    input[type="search"] {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      padding: 10px 14px 10px 40px;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    input[type="search"]:focus { border-color: var(--accent); }
+
+    /* ── Buttons ─────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 10px 18px;
+      border-radius: var(--radius);
+      border: none;
+      cursor: pointer;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .01em;
+      transition: opacity .15s, transform .1s;
+      white-space: nowrap;
+    }
+
+    .btn:active { transform: scale(.97); }
+    .btn:hover { opacity: .88; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-ghost {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-danger {
+      background: #2b1616;
+      border: 1px solid var(--danger);
+      color: var(--danger);
+    }
+
+    .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; }
+
+    /* ── Table ───────────────────────────────────────────────────── */
+    .table-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+    }
+
+    thead {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      text-align: left;
+      padding: 13px 16px;
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--muted);
+      font-weight: 500;
+      user-select: none;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background .12s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(79,142,247,.05); }
+
+    td {
+      padding: 13px 16px;
+      font-size: 13px;
+      vertical-align: middle;
+    }
+
+    .td-mono { font-family: var(--mono); color: var(--muted); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .badge-success { background: rgba(34,201,122,.12); color: var(--success); }
+    .badge-failed  { background: rgba(247, 91, 91,.12); color: var(--danger);  }
+
+    .mark-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mark-num {
+      font-family: var(--mono);
+      font-size: 13px;
+      min-width: 38px;
+    }
+
+    .bar-track {
+      flex: 1;
+      height: 4px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+      min-width: 60px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width .4s ease;
+    }
+
+    .actions { display: flex; gap: 6px; }
+
+    /* ── Empty state ─────────────────────────────────────────────── */
+    .empty {
+      text-align: center;
+      padding: 64px 24px;
+      color: var(--muted);
+    }
+
+    .empty svg { opacity: .3; margin-bottom: 16px; }
+    .empty p { font-size: 14px; }
+
+    /* ── Toast ───────────────────────────────────────────────────── */
+    #toast-container {
+      position: fixed;
+      bottom: 28px; right: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 999;
+    }
+
+    .toast {
+      padding: 13px 18px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      border-left: 3px solid;
+      min-width: 240px;
+      animation: slideIn .25s ease;
+      backdrop-filter: blur(8px);
+    }
+
+    .toast-success { background: rgba(34,201,122,.15); border-color: var(--success); color: var(--success); }
+    .toast-error   { background: rgba(247,91,91,.15);  border-color: var(--danger);  color: var(--danger); }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ── Modal ───────────────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.7);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%;
+      max-width: 480px;
+      margin: 24px;
+      transform: translateY(12px);
+      transition: transform .2s;
+    }
+
+    .modal-overlay.open .modal { transform: translateY(0); }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 22px;
+      line-height: 1;
+      padding: 4px;
+      border-radius: 6px;
+      transition: color .15s;
+    }
+
+    .modal-close:hover { color: var(--text); }
+
+    /* ── Form ────────────────────────────────────────────────────── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full { grid-column: 1 / -1; }
+
+    label {
+      font-family: var(--mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--muted);
+    }
+
+    .form-input {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color .2s;
+      width: 100%;
+    }
+
+    .form-input:focus { border-color: var(--accent); }
+    .form-input.error { border-color: var(--danger); }
+
+    .form-error {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--danger);
+      min-height: 14px;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    /* ── Delete confirm modal ────────────────────────────────────── */
+    .danger-icon {
+      width: 52px; height: 52px;
+      background: rgba(247,91,91,.12);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+      color: var(--danger);
+    }
+
+    .delete-body { text-align: center; }
+    .delete-body h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .delete-body p  { font-size: 13px; color: var(--muted); }
+
+    /* ── Mark colour helper (set via JS) ─────────────────────────── */
+    .mark-high { color: var(--success); }
+    .mark-mid  { color: var(--warn); }
+    .mark-low  { color: var(--danger); }
+
+    /* ── Responsive ──────────────────────────────────────────────── */
+    @media (max-width: 540px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .form-group.full { grid-column: auto; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <span class="brand-tag">School OS · Student Registry</span>
+      <h1>Students</h1>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <a href="/logs" style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);text-decoration:none;font-size:13px;font-weight:600;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Activity Log
+      </a>
+      <button class="btn btn-primary" onclick="openCreate()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Student
+      </button>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-label">Total</span>
+      <span class="stat-value accent" id="stat-total">—</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Passed</span>
+      <span class="stat-value success" id="stat-success">—</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Failed</span>
+      <span class="stat-value danger" id="stat-failed">—</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Avg Mark</span>
+      <span class="stat-value" id="stat-avg">—</span>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" id="search" placeholder="Search by name, matricule…" oninput="filterTable()" />
+    </div>
+    <button class="btn btn-ghost" onclick="loadStudents()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+      Refresh
+    </button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#ID</th>
+          <th>Matricule</th>
+          <th>Name</th>
+          <th>Family Name</th>
+          <th>Mark /20</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="table-body">
+        <tr><td colspan="7"><div class="empty"><p>Loading…</p></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- ── Add / Edit Modal ───────────────────────────────────────────── -->
+<div class="modal-overlay" id="form-modal" onclick="handleOverlayClick(event,'form-modal')">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Add Student</span>
+      <button class="modal-close" onclick="closeModal('form-modal')">×</button>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Matricule (12 digits)</label>
+        <input class="form-input" id="f-matricule" type="text" maxlength="12" placeholder="202400000001" />
+        <span class="form-error" id="e-matricule"></span>
+      </div>
+      <div class="form-group">
+        <label>First Name</label>
+        <input class="form-input" id="f-name" type="text" placeholder="Ahmed" />
+        <span class="form-error" id="e-name"></span>
+      </div>
+      <div class="form-group">
+        <label>Family Name</label>
+        <input class="form-input" id="f-family" type="text" placeholder="Benali" />
+        <span class="form-error" id="e-family"></span>
+      </div>
+      <div class="form-group full">
+        <label>Mark (0 – 20)</label>
+        <input class="form-input" id="f-mark" type="number" min="0" max="20" step="0.25" placeholder="14.5" />
+        <span class="form-error" id="e-mark"></span>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('form-modal')">Cancel</button>
+      <button class="btn btn-primary" id="modal-submit" onclick="submitForm()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Delete Confirm Modal ───────────────────────────────────────── -->
+<div class="modal-overlay" id="delete-modal" onclick="handleOverlayClick(event,'delete-modal')">
+  <div class="modal" style="max-width:360px">
+    <div class="delete-body">
+      <div class="danger-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      </div>
+      <h2>Delete Student?</h2>
+      <p id="delete-desc">This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer" style="justify-content:center; margin-top:20px;">
+      <button class="btn btn-ghost" onclick="closeModal('delete-modal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── State ──────────────────────────────────────────────────────── */
+let allStudents = [];
+let editingId   = null;
+let deletingId  = null;
+
+/* ── API ────────────────────────────────────────────────────────── */
+const API = '/api/students/';
+
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API + path, opts);
+  const data = await res.json();
+  if (!res.ok) throw data;
+  return data;
+}
+
+/* ── Load ───────────────────────────────────────────────────────── */
+async function loadStudents() {
+  try {
+    allStudents = await api('GET', '');
+    updateStats();
+    renderTable(allStudents);
+  } catch (err) {
+    toast('Failed to load students: ' + (err.error || 'DB unavailable'), 'error');
+  }
+}
+
+/* ── Stats ──────────────────────────────────────────────────────── */
+function updateStats() {
+  const total   = allStudents.length;
+  const success = allStudents.filter(s => s.status === 'success').length;
+  const failed  = total - success;
+  const avg     = total ? (allStudents.reduce((a, s) => a + s.mark, 0) / total).toFixed(2) : '—';
+
+  document.getElementById('stat-total').textContent   = total;
+  document.getElementById('stat-success').textContent = success;
+  document.getElementById('stat-failed').textContent  = failed;
+  const avgEl = document.getElementById('stat-avg');
+  avgEl.textContent = avg;
+  avgEl.className   = 'stat-value ' + markClass(parseFloat(avg));
+}
+
+/* ── Render ─────────────────────────────────────────────────────── */
+function markClass(m) {
+  if (isNaN(m)) return '';
+  return m >= 14 ? 'mark-high' : m >= 10 ? 'mark-mid' : 'mark-low';
+}
+
+function markBarColor(m) {
+  return m >= 14 ? 'var(--success)' : m >= 10 ? 'var(--warn)' : 'var(--danger)';
+}
+
+function renderTable(list) {
+  const tbody = document.getElementById('table-body');
+  if (!list.length) {
+    tbody.innerHTML = `
+      <tr><td colspan="7">
+        <div class="empty">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <p>No students found. Click <strong>Add Student</strong> to get started.</p>
+        </div>
+      </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(s => {
+    const pct   = (s.mark / 20 * 100).toFixed(1);
+    const cls   = markClass(s.mark);
+    const badge = s.status === 'success'
+      ? '<span class="badge badge-success">✓ Success</span>'
+      : '<span class="badge badge-failed">✗ Failed</span>';
+
+    return `<tr>
+      <td class="td-mono">#${s.id}</td>
+      <td class="td-mono">${esc(s.matricule)}</td>
+      <td><strong>${esc(s.name)}</strong></td>
+      <td>${esc(s.family_name)}</td>
+      <td>
+        <div class="mark-bar">
+          <span class="mark-num ${cls}">${s.mark.toFixed(2)}</span>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${pct}%;background:${markBarColor(s.mark)}"></div>
+          </div>
+        </div>
+      </td>
+      <td>${badge}</td>
+      <td>
+        <div class="actions">
+          <button class="btn btn-ghost btn-sm" onclick="openEdit(${s.id})">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="openDelete(${s.id},'${esc(s.name)} ${esc(s.family_name)}')">Delete</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── Filter ─────────────────────────────────────────────────────── */
+function filterTable() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const filtered = allStudents.filter(s =>
+    s.name.toLowerCase().includes(q) ||
+    s.family_name.toLowerCase().includes(q) ||
+    s.matricule.includes(q)
+  );
+  renderTable(filtered);
+}
+
+/* ── Modal helpers ──────────────────────────────────────────────── */
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function handleOverlayClick(e, id) { if (e.target === e.currentTarget) closeModal(id); }
+
+/* ── Create ─────────────────────────────────────────────────────── */
+function openCreate() {
+  editingId = null;
+  document.getElementById('modal-title').textContent   = 'Add Student';
+  document.getElementById('modal-submit').textContent  = 'Add Student';
+  clearForm();
+  openModal('form-modal');
+  document.getElementById('f-matricule').focus();
+}
+
+/* ── Edit ────────────────────────────────────────────────────────── */
+function openEdit(id) {
+  const s = allStudents.find(s => s.id === id);
+  if (!s) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent  = 'Edit Student';
+  document.getElementById('modal-submit').textContent = 'Save Changes';
+  clearForm();
+  document.getElementById('f-matricule').value = s.matricule;
+  document.getElementById('f-name').value       = s.name;
+  document.getElementById('f-family').value     = s.family_name;
+  document.getElementById('f-mark').value       = s.mark;
+  openModal('form-modal');
+}
+
+/* ── Submit ─────────────────────────────────────────────────────── */
+async function submitForm() {
+  clearErrors();
+  const payload = {
+    matricule:   document.getElementById('f-matricule').value.trim(),
+    name:        document.getElementById('f-name').value.trim(),
+    family_name: document.getElementById('f-family').value.trim(),
+    mark:        parseFloat(document.getElementById('f-mark').value),
+  };
+
+  // Client-side pre-validation
+  let hasErr = false;
+  if (!/^\d{12}$/.test(payload.matricule)) { setErr('e-matricule','Must be exactly 12 digits'); hasErr = true; }
+  if (!payload.name)                        { setErr('e-name','Required'); hasErr = true; }
+  if (!payload.family_name)                 { setErr('e-family','Required'); hasErr = true; }
+  if (isNaN(payload.mark)||payload.mark<0||payload.mark>20) { setErr('e-mark','Between 0 and 20'); hasErr = true; }
+  if (hasErr) return;
+
+  try {
+    if (editingId) {
+      await api('PUT', editingId, payload);
+      toast('Student updated successfully', 'success');
+    } else {
+      await api('POST', '', payload);
+      toast('Student added successfully', 'success');
+    }
+    closeModal('form-modal');
+    loadStudents();
+  } catch (err) {
+    if (err.errors) err.errors.forEach(e => {
+      if (e.includes('matricule')) setErr('e-matricule', e);
+      else if (e.includes('name')) setErr('e-name', e);
+      else if (e.includes('family')) setErr('e-family', e);
+      else if (e.includes('mark')) setErr('e-mark', e);
+    });
+    else toast(err.error || 'Server error', 'error');
+  }
+}
+
+/* ── Delete ─────────────────────────────────────────────────────── */
+function openDelete(id, label) {
+  deletingId = id;
+  document.getElementById('delete-desc').textContent =
+    `"${label}" will be permanently removed.`;
+  openModal('delete-modal');
+}
+
+async function confirmDelete() {
+  if (!deletingId) return;
+  try {
+    await api('DELETE', deletingId, null);
+    toast('Student deleted', 'success');
+    closeModal('delete-modal');
+    loadStudents();
+  } catch (err) {
+    toast(err.error || 'Delete failed', 'error');
+  }
+}
+
+/* ── Toast ──────────────────────────────────────────────────────── */
+function toast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+/* ── Form utils ─────────────────────────────────────────────────── */
+function clearForm() {
+  ['f-matricule','f-name','f-family','f-mark'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = '';
+    el.classList.remove('error');
+  });
+  clearErrors();
+}
+
+function clearErrors() {
+  ['e-matricule','e-name','e-family','e-mark'].forEach(id =>
+    document.getElementById(id).textContent = '');
+}
+
+function setErr(id, msg) {
+  document.getElementById(id).textContent = msg;
+  const inputId = id.replace('e-', 'f-').replace('e-family','f-family');
+  document.getElementById(inputId)?.classList.add('error');
+}
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── Keyboard shortcuts ─────────────────────────────────────────── */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeModal('form-modal');
+    closeModal('delete-modal');
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') submitForm();
+});
+
+/* ── Boot ───────────────────────────────────────────────────────── */
+loadStudents();
+</script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Shared network — services talk to each other by service name (mysql, mongo)
+# ─────────────────────────────────────────────────────────────────────────────
+networks:
+  appnet:
+    driver: bridge
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Named volumes — persist DB data across container restarts
+# ─────────────────────────────────────────────────────────────────────────────
+volumes:
+  mysql_data:
+  mongo_data:
+
+services:
+
+  # ── MySQL ─────────────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: flask_mysql
+    restart: unless-stopped
+    networks:
+      - appnet
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init/mysql:/docker-entrypoint-initdb.d
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE:      ${MYSQL_DATABASE}
+      MYSQL_USER:          ${MYSQL_USER}
+      MYSQL_PASSWORD:      ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"   # expose to host for local tooling (DBeaver, MySQL Workbench)
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "--password=${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s   # MySQL needs time to initialise on first boot
+
+  # ── MongoDB ───────────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7.0
+    container_name: flask_mongo
+    restart: unless-stopped
+    networks:
+      - appnet
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE:      ${MONGO_DATABASE}
+    ports:
+      - "27017:27017"  # expose to host for local tooling (Compass, mongosh)
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── Flask App ─────────────────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flask_app
+    restart: unless-stopped
+    networks:
+      - appnet
+    env_file:
+      - .env          # runtime secrets (never commit the real .env)
+    ports:
+      - "${APP_PORT:-5000}:5000"
+    # depends_on with condition: service_healthy means Compose waits for DB
+    # health checks before starting the app — but the app itself is also
+    # coded to handle DB unavailability gracefully.
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
