@@ -30,7 +30,11 @@ def create_app() -> Flask:
     app.register_blueprint(students_bp)
     app.register_blueprint(logs_bp)
     app.register_blueprint(ui_bp)
+    from db.mysql import init_db
 
+    # at the end of create_app(), before return app:
+    with app.app_context():
+        init_db()
     app.logger.info("Blueprints registered: status, health, db_tests, students, logs, ui.")
     return app
 

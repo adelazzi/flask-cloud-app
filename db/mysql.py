@@ -66,3 +66,26 @@ def run_query(sql: str, args: tuple = ()) -> list[dict]:
         with conn.cursor() as cur:
             cur.execute(sql, args)
             return cur.fetchall()
+
+
+def init_db() -> None:
+    """Create tables if they don't exist. Called once at app startup."""
+    sql = """
+    CREATE TABLE IF NOT EXISTS students (
+        id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        matricule   CHAR(12) NOT NULL UNIQUE,
+        name        VARCHAR(100) NOT NULL,
+        family_name VARCHAR(100) NOT NULL,
+        mark        DECIMAL(4,2) NOT NULL DEFAULT 0.00,
+        created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    """
+    try:
+        conn = get_connection()
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute(sql)
+        logger.info("Database tables verified.")
+    except pymysql.Error as exc:
+        logger.warning("init_db: could not create tables — %s", exc)
